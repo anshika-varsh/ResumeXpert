@@ -287,14 +287,43 @@ export default function Signup({ onNavigate }) {
     return errs;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-    setErrors({});
-    setLoading(true);
-    setTimeout(() => { setLoading(false); setSuccess(true); }, 2000);
-  };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  const errs = validate();
+  if (Object.keys(errs).length) { setErrors(errs); return; }
+  
+  setErrors({});
+  setLoading(true);
+
+  try {
+    const res = await fetch("http://localhost:5000/api/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: form.name,
+        email: form.email,
+        password: form.password
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.message === "User Registered") {
+      setLoading(false);
+      setSuccess(true);
+    } else {
+      setLoading(false);
+      setErrors({ form: data.message || "Registration failed" });
+    }
+
+  } catch (error) {
+    setLoading(false);
+    setErrors({ form: "Server error. Please try again." });
+    console.error("Signup error:", error);
+  }
+};
 
   return (
     <div className="min-h-screen flex" style={{ fontFamily:"DM Sans,sans-serif" }}>
