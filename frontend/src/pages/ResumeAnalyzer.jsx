@@ -101,7 +101,7 @@ export default function ResumeAnalyzer() {
       console.log("✅ Text extracted successfully");
 
       console.log("🔄 Sending to backend for AI analysis...");
-      const response = await fetch("http://localhost:5000/api/analyze", {
+      const response = await fetch("https://resumexpert-12.onrender.com/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })

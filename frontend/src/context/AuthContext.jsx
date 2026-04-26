@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/signup", {
+      const res = await fetch("https://resumexpert-12.onrender.com/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,7 +76,7 @@ export function AuthProvider({ children }) {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/login", {
+      const res = await fetch("https://resumexpert-12.onrender.com/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
