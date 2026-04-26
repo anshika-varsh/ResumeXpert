@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 /* ─────────────── tiny SVG primitives ─────────────── */
 const Sparkle = ({ size = 13, color = "#2563EB" }) => (
@@ -67,16 +68,20 @@ function Navbar() {
 
         {/* Auth buttons */}
         <div className="hidden md:flex items-center gap-2.5">
-          <a href="#" className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
-            Login
-          </a>
-          <a
-            href="#"
-            className="px-5 py-2 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90"
-            style={{ background: "linear-gradient(135deg,#2563EB,#4F46E5)", boxShadow: "0 4px 14px rgba(37,99,235,.28)" }}
-          >
-            Sign Up Free
-          </a>
+          const navigate = useNavigate(
+            <li
+  onClick={() => navigate("/signup")}
+  className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium"
+>
+  📝 Signup
+</li>
+<li
+  onClick={() => navigate("/login")}
+  className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium"
+>
+  🔐 Login
+</li>
+          );
         </div>
 
         {/* Mobile burger */}
