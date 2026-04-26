@@ -21,7 +21,7 @@ const ChevRight = () => (
 );
 
 /* ─────────────── NAVBAR ─────────────── */
-function Navbar() {
+function Navbar({ navigate }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen]         = useState(false);
 
@@ -68,20 +68,20 @@ function Navbar() {
 
         {/* Auth buttons */}
         <div className="hidden md:flex items-center gap-2.5">
-          const navigate = useNavigate(
-            <li
-  onClick={() => navigate("/signup")}
-  className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium"
->
-  📝 Signup
-</li>
-<li
-  onClick={() => navigate("/login")}
-  className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium"
->
-  🔐 Login
-</li>
-          );
+          
+            <button
+              onClick={() => navigate("/login")}
+              className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium"
+            >
+              🔐 Login
+            </button>
+            <button
+              onClick={() => navigate("/signup")}
+              className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium"
+            >
+              📝 Signup
+            </button>
+
         </div>
 
         {/* Mobile burger */}
@@ -99,8 +99,25 @@ function Navbar() {
             <a key={l.label} href={l.href} className="text-sm font-medium text-gray-700" onClick={() => setOpen(false)}>{l.label}</a>
           ))}
           <div className="flex gap-2 pt-2 border-t border-gray-100">
-            <a href="#" className="flex-1 text-center py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700">Login</a>
-            <a href="#" className="flex-1 text-center py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: "linear-gradient(135deg,#2563EB,#4F46E5)" }}>Sign Up Free</a>
+            <button 
+              onClick={() => {
+                navigate("/login");
+                setOpen(false);
+              }}
+              className="flex-1 text-center py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+            >
+              Login
+            </button>
+            <button 
+              onClick={() => {
+                navigate("/signup");
+                setOpen(false);
+              }}
+              className="flex-1 text-center py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90" 
+              style={{ background: "linear-gradient(135deg,#2563EB,#4F46E5)" }}
+            >
+              Sign Up
+            </button>
           </div>
         </div>
       )}
@@ -768,7 +785,9 @@ function Footer() {
 }
 
 /* ─────────────── ROOT ─────────────── */
-export default function App() {
+export default function Home() {
+  const navigate = useNavigate();
+  
   return (
     <>
       <style>{`
@@ -781,7 +800,7 @@ export default function App() {
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-      <Navbar />
+      <Navbar navigate={navigate} />
       <main>
         <Hero />
         <Features />
