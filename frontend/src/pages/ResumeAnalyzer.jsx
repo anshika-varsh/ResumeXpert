@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, CheckCircle2, AlertCircle, X, Download, Zap } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Download, Zap } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import pdfWorker from "pdfjs-dist/build/pdf.worker?url";
 
-// Set up the worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set up PDF worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 export default function ResumeAnalyzer() {
   const { user, logout } = useAuth();
@@ -32,7 +33,6 @@ export default function ResumeAnalyzer() {
       
       let fullText = "";
       
-      // Extract text from all pages
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
         const page = await pdf.getPage(pageNum);
         const textContent = await page.getTextContent();
@@ -49,19 +49,17 @@ export default function ResumeAnalyzer() {
     }
   };
 
-  const handleFileSelect = async (selectedFile) => {
+  const handleFileSelect = (selectedFile) => {
     setError("");
     
     if (!selectedFile) return;
 
-    // Validate file type
     if (!selectedFile.name.toLowerCase().endsWith('.pdf')) {
       setError("❌ Please upload a PDF file only");
       return;
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     if (selectedFile.size > maxSize) {
       setError("❌ File size must be less than 5MB");
       return;
@@ -86,32 +84,7 @@ export default function ResumeAnalyzer() {
     handleFileSelect(droppedFile);
   };
 
-  // AI Analysis function - analyzes extracted text
-  const analyzeResume = (text) => {
-    // Count keywords
-    const keywords = ["experience", "skills", "education", "project", "achievement", "responsibility", "managed", "led", "developed", "created"];
-    const keywordMatches = keywords.filter(kw => text.toLowerCase().includes(kw)).length;
-    const keywordScore = Math.min((keywordMatches / keywords.length) * 100, 100);
-
-    // Check formatting issues
-    let formattingScore = 85;
-    if (text.length > 5000) formattingScore -= 15; // Too long
-    if (text.split('\n').length < 5) formattingScore -= 20; // Not well formatted
-
-    // Check content quality
-    const contentScore = Math.min(text.length / 100, 100);
-
-    // Calculate ATS score
-    const atsScore = Math.round((keywordScore + formattingScore + contentScore) / 3);
-
-    return {
-      atsScore,
-      keywordScore: Math.round(keywordScore),
-      formattingScore,
-      contentScore: Math.round(contentScore)
-    };
-  };
-
+  // Main analysis function
   const handleAnalyze = async () => {
     if (!file) {
       setError("❌ Please select a file first");
@@ -122,81 +95,111 @@ export default function ResumeAnalyzer() {
     setError("");
 
     try {
-      // Extract text from PDF
       console.log("📄 Extracting text from PDF...");
       const text = await extractTextFromPDF(file);
       setExtractedText(text);
       console.log("✅ Text extracted successfully");
-      console.log("Extracted text preview:", text.substring(0, 200));
 
-      // Analyze the extracted text
-      const scores = analyzeResume(text);
-      const overallScore = scores.atsScore;
-
-      // Determine improvements based on extracted content
-      const improvements = [];
-
-      if (scores.keywordScore < 70) {
-        improvements.push({
-          type: "critical",
-          title: "Missing Keywords",
-          description: "Add industry-specific keywords like 'Led', 'Developed', 'Managed', 'Achieved' to improve ATS score",
-          impact: "High"
-        });
-      }
-
-      if (scores.formattingScore < 75) {
-        improvements.push({
-          type: "warning",
-          title: "Formatting Issues",
-          description: "Improve document structure with proper sections and spacing",
-          impact: "Medium"
-        });
-      }
-
-      if (text.length < 800) {
-        improvements.push({
-          type: "warning",
-          title: "Limited Content",
-          description: "Add more details about your experience and achievements",
-          impact: "Medium"
-        });
-      }
-
-      // Add positive feedback
-      if (text.toLowerCase().includes("experience") || text.toLowerCase().includes("skills")) {
-        improvements.push({
-          type: "success",
-          title: "Well-Structured Resume",
-          description: "Good job including experience and skills sections",
-          impact: "Positive"
-        });
-      }
-
-      improvements.push({
-        type: "info",
-        title: "Personalization",
-        description: "Tailor your resume for each job application by matching job description keywords",
-        impact: "Low"
+      console.log("🔄 Sending to backend for AI analysis...");
+      const response = await fetch("http://localhost:5000/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
       });
 
+      if (!response.ok) {
+        throw new Error("Backend analysis failed");
+      }
+
+      const data = await response.json();
+      const analysisData = data.analysis;
+
+      console.log("✅ Analysis received:", analysisData);
+
+      // Build improvements array based on analysis
+      const improvements = analysisData.improvements || generateImprovements(analysisData);
+
       setAnalysis({
-        score: overallScore,
-        grade: overallScore >= 90 ? "A+" : overallScore >= 80 ? "A" : overallScore >= 70 ? "B" : "C",
+        score: analysisData.atsScore,
+        grade: analysisData.atsScore >= 90 ? "A+" : 
+               analysisData.atsScore >= 80 ? "A" : 
+               analysisData.atsScore >= 70 ? "B" : "C",
         improvements,
         metrics: [
-          { label: "ATS Score", value: overallScore, icon: "🎯" },
-          { label: "Keyword Match", value: scores.keywordScore, icon: "🔑" },
-          { label: "Formatting", value: scores.formattingScore, icon: "✨" },
-          { label: "Content Quality", value: scores.contentScore, icon: "📝" }
+          { label: "ATS Score", value: analysisData.atsScore, icon: "🎯" },
+          { label: "Keywords", value: analysisData.keywordScore, icon: "🔑" },
+          { label: "Sections", value: analysisData.sectionScore, icon: "📋" },
+          { label: "Formatting", value: analysisData.formattingScore, icon: "✨" },
+          { label: "Grammar", value: analysisData.grammarScore, icon: "📝" },
+          { label: "Content", value: analysisData.contentQualityScore, icon: "💼" }
         ]
       });
 
       setIsAnalyzing(false);
     } catch (err) {
+      console.error("Error:", err);
       setError(`❌ Error analyzing resume: ${err.message}`);
       setIsAnalyzing(false);
     }
+  };
+
+  // Fallback improvements generator
+  const generateImprovements = (analysisData) => {
+    const improvements = [];
+
+    if (analysisData.keywordScore < 60) {
+      improvements.push({
+        type: "critical",
+        title: "🔴 Weak Keywords & Action Verbs",
+        description: "Add action verbs like: Led, Managed, Developed, Achieved, Increased",
+        impact: "High"
+      });
+    }
+
+    if (analysisData.contentQualityScore < 70) {
+      improvements.push({
+        type: "critical",
+        title: "🔴 Weak Content Quality",
+        description: "Add quantifiable metrics (e.g., 'Increased sales by 30%', 'Managed 50+ projects')",
+        impact: "High"
+      });
+    }
+
+    if (analysisData.sectionScore < 70) {
+      improvements.push({
+        type: "warning",
+        title: "🟡 Missing Key Sections",
+        description: "Add sections: Experience, Skills, Education, Projects, Certifications",
+        impact: "Medium"
+      });
+    }
+
+    if (analysisData.formattingScore < 75) {
+      improvements.push({
+        type: "warning",
+        title: "🟡 Formatting Issues",
+        description: "Use bullet points, proper spacing, and consistent formatting throughout",
+        impact: "Medium"
+      });
+    }
+
+    if (analysisData.grammarScore >= 85) {
+      improvements.push({
+        type: "success",
+        title: "🟢 Great Grammar",
+        description: "Your resume has excellent grammar and spelling",
+        impact: "Positive"
+      });
+    }
+
+    improvements.push({
+      type: "info",
+      title: "💡 ATS Optimization Tips",
+      description: "Use standard fonts, avoid graphics/tables, include job title keywords, save as PDF",
+      impact: "Medium"
+    });
+
+    return improvements;
   };
 
   const handleRemoveFile = () => {
@@ -204,11 +207,10 @@ export default function ResumeAnalyzer() {
     setAnalysis(null);
     setExtractedText("");
     setError("");
-    fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleDownloadReport = () => {
-    // Create a detailed report
     const reportContent = `
 RESUME ANALYSIS REPORT
 ========================
@@ -231,10 +233,9 @@ Impact: ${imp.impact}
 ${imp.description}
 `).join('\n')}
 
-For full analysis, please visit the analyzer page.
+For full analysis, visit the analyzer page.
     `.trim();
 
-    // Create and download file
     const element = document.createElement("a");
     const file = new Blob([reportContent], { type: "text/plain" });
     element.href = URL.createObjectURL(file);
@@ -301,7 +302,6 @@ For full analysis, please visit the analyzer page.
                 </p>
               </div>
 
-              {/* Upload Area */}
               <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -386,7 +386,6 @@ For full analysis, please visit the analyzer page.
                 )}
               </div>
 
-              {/* Error message */}
               {error && (
                 <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -402,7 +401,6 @@ For full analysis, please visit the analyzer page.
           {analysis && (
             <div className="space-y-8">
               
-              {/* Header with overall score */}
               <div className="bg-white rounded-2xl shadow-lg p-8 border-l-4 border-emerald-600">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                   <div>
@@ -460,12 +458,12 @@ For full analysis, please visit the analyzer page.
                 </div>
               </div>
 
-              {/* Metrics Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Metrics Grid - 6 columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                 {analysis.metrics.map((metric, index) => (
-                  <div key={index} className="bg-white rounded-xl shadow p-6 text-center">
+                  <div key={index} className="bg-white rounded-xl shadow p-6 text-center hover:shadow-lg transition">
                     <p className="text-3xl mb-2">{metric.icon}</p>
-                    <p className="text-sm text-gray-600 mb-2">{metric.label}</p>
+                    <p className="text-sm text-gray-600 mb-2 font-medium">{metric.label}</p>
                     <div className="mb-3">
                       <div className="relative w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div
@@ -535,7 +533,7 @@ For full analysis, please visit the analyzer page.
                 </div>
               </div>
 
-              {/* Extracted Text Preview (Optional - for debugging) */}
+              {/* Extracted Text Preview */}
               <div className="bg-white rounded-xl shadow p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">Extracted Text Preview</h3>
                 <div className="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto">

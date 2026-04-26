@@ -17,6 +17,7 @@ function App() {
         element={<ProtectedRoute><Dashboard /></ProtectedRoute>} 
       />
        <Route path="/analyze" element={<ProtectedRoute><ResumeAnalyzer /></ProtectedRoute>} />
+       <Route path="/builder" element={<ProtectedRoute><Builder /></ProtectedRoute>} />
        <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

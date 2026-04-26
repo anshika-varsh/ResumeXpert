@@ -4,6 +4,8 @@ const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
+const analyzeRoute = require("./routes/analyze");
+
 
 require("dotenv").config();
 app.use(cors());
@@ -11,6 +13,7 @@ app.use(express.json());
 
 
 app.use("/api", authRoutes);
+app.use("/api", analyzeRoute);
 
 
 mongoose.connect("mongodb://127.0.0.1:27017/DBauth")

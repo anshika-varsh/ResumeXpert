@@ -73,9 +73,12 @@ export default function Dashboard() {
             <li className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium">
               🏠 Overview
             </li>
-            <li className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium">
-              📝 Build Resume
-            </li>
+            <li
+  onClick={() => navigate("/builder")}
+  className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium"
+>
+  📝 Build Resume
+</li>
             <li className="px-4 py-3 rounded-lg hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-purple-600 transition font-medium">
               📊 Analyze
             </li>
