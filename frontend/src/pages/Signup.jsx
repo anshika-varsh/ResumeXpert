@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 /* ── shared micro-components ── */
 const Sparkle = ({ size = 14, color = "#2563EB" }) => (
@@ -272,6 +273,7 @@ export default function Signup({ onNavigate }) {
   const [showConf, setShowConf]   = useState(false);
   const [loading, setLoading]     = useState(false);
   const [success, setSuccess]     = useState(false);
+  const { signup } = useAuth();
 
   const set = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
@@ -287,13 +289,24 @@ export default function Signup({ onNavigate }) {
     return errs;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
     setLoading(true);
-    setTimeout(() => { setLoading(false); setSuccess(true); }, 2000);
+
+    const result = await signup(form.name, form.email, form.password);
+    
+    if (result.token) {
+      setSuccess(true);
+      setTimeout(() => {
+        onNavigate && onNavigate("dashboard");
+      }, 1500);
+    } else {
+      setErrors({ form: result.message || "Signup failed. Please try again." });
+      setLoading(false);
+    }
   };
 
   return (
@@ -394,6 +407,15 @@ export default function Signup({ onNavigate }) {
 
               {/* form */}
               <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
+                {/* Form error */}
+                {errors.form && (
+                  <div className="p-3 rounded-lg text-sm flex items-center gap-2" style={{ background:"#FEE2E2", color:"#DC2626" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                    </svg>
+                    {errors.form}
+                  </div>
+                )}
                 {/* Full name */}
                 <FloatingInput
                   id="name"
